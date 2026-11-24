@@ -1,0 +1,5 @@
+{
+  "name": "US Visa Photo Automator",
+  "description": "Smart Canvas utility that automatically crops, centers, pads, and replaces backgrounds for US Visa 2x2 photo compliance and 600 DPI print sheets.",
+  "requestFramePermissions": []
+}

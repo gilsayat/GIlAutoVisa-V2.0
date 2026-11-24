@@ -1,0 +1,62 @@
+name: Build Portable Windows EXE
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-windows-portable:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install app dependencies
+        run: npm install
+
+      - name: Ensure local MediaPipe WASM and AI models are bundled
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "public/mediapipe/wasm" | Out-Null
+          New-Item -ItemType Directory -Force -Path "public/mediapipe/models" | Out-Null
+          Copy-Item -Force "node_modules/@mediapipe/tasks-vision/wasm/*" "public/mediapipe/wasm/"
+
+          if (-not (Test-Path "public/mediapipe/models/face_landmarker.task")) {
+            Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task" -OutFile "public/mediapipe/models/face_landmarker.task"
+          }
+          if (-not (Test-Path "public/mediapipe/models/selfie_segmenter.tflite")) {
+            Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite" -OutFile "public/mediapipe/models/selfie_segmenter.tflite"
+          }
+
+      - name: Build frontend bundle
+        run: npm run build
+
+      - name: Install Electron packager (Windows runner only)
+        run: npm install -D electron electron-builder
+
+      - name: Package portable no-install Windows EXE
+        run: npx electron-builder --config electron-builder.yml --win portable
+
+      - name: Prepare portable folder with local AI Models copy
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "portable-output/Models" | Out-Null
+          Copy-Item -Force "release/USVisaPhotoAutomator.exe" "portable-output/USVisaPhotoAutomator.exe"
+          Copy-Item -Force "public/mediapipe/models/face_landmarker.task" "portable-output/Models/face_landmarker.task"
+          Copy-Item -Force "public/mediapipe/models/selfie_segmenter.tflite" "portable-output/Models/selfie_segmenter.tflite"
+
+      - name: Upload Portable Windows App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: USVisaPhotoAutomator-Windows-Portable
+          path: portable-output/
+          if-no-files-found: error

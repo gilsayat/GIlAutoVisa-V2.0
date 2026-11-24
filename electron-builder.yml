@@ -1,0 +1,20 @@
+appId: com.gil.usvisaphotoautomator
+productName: US Visa Photo Automator
+copyright: Created by Gil
+directories:
+  output: release
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+asar: true
+asarUnpack:
+  - dist/app.ico
+win:
+  icon: public/app.ico
+  target:
+    - target: portable
+      arch:
+        - x64
+portable:
+  artifactName: USVisaPhotoAutomator.exe
